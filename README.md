@@ -83,27 +83,7 @@ star-to-task/
 └── README.md             # Diese Datei
 ```
 
-## manifest.json anpassen
 
-Vor der Installation solltest du anpassen:
-
-```json
-"author": "Dein Name",
-"applications": {
-  "gecko": {
-    "id": "star-to-task@deinedomain.com"
-  }
-}
-```
-
-## Nächste Entwicklungsschritte
-
-1. ✅ Basis-Struktur und Event-Listener
-2. ⏳ **Icons erstellen** (48x48 und 96x96 PNG)
-3. ⏳ **Experiment API** für echte Task-Erstellung
-4. ⏳ **Sidebar** mit Task-Übersicht
-5. ⏳ **Optionen-Seite** für Einstellungen
-6. ⏳ **Synchronisation** mit bestehenden Tasks
 
 ## Lizenz
 
@@ -111,4 +91,4 @@ MIT
 
 ## Support
 
-Bei Fragen oder Problemen: GitHub Issues oder E-Mail an [deine-email]
+Bei Fragen oder Problemen: GitHub Issues
