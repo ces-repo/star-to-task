@@ -1,0 +1,119 @@
+[
+  {
+    "namespace": "StarToTaskAPI",
+    "description": "API to create and manage Thunderbird tasks",
+    "functions": [
+      {
+        "name": "createTask",
+        "type": "function",
+        "description": "Creates a new task in Thunderbird",
+        "async": true,
+        "parameters": [
+          {
+            "name": "title",
+            "type": "string",
+            "description": "Task title"
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "optional": true,
+            "description": "Task description"
+          },
+          {
+            "name": "dueDate",
+            "type": "string",
+            "optional": true,
+            "description": "Due date in ISO format"
+          },
+          {
+            "name": "priority",
+            "type": "integer",
+            "optional": true,
+            "description": "Task priority (1=High, 5=Medium, 9=Low)"
+          }
+        ],
+        "returns": {
+          "type": "string",
+          "description": "The ID of the created task"
+        }
+      },
+      {
+        "name": "deleteTask",
+        "type": "function",
+        "description": "Deletes a task by ID",
+        "async": true,
+        "parameters": [
+          {
+            "name": "taskId",
+            "type": "string",
+            "description": "ID of the task to delete"
+          }
+        ],
+        "returns": {
+          "type": "boolean",
+          "description": "True if task was deleted, false if not found"
+        }
+      },
+      {
+        "name": "completeTask",
+        "type": "function",
+        "description": "Marks a task as completed",
+        "async": true,
+        "parameters": [
+          {
+            "name": "taskId",
+            "type": "string",
+            "description": "ID of the task to complete"
+          }
+        ],
+        "returns": {
+          "type": "boolean",
+          "description": "True if task was completed, false if not found"
+        }
+      },
+      {
+        "name": "isTaskCompleted",
+        "type": "function",
+        "description": "Checks if a task is completed",
+        "async": true,
+        "parameters": [
+          {
+            "name": "taskId",
+            "type": "string",
+            "description": "The ID of the task to check"
+          }
+        ],
+        "returns": {
+          "type": "boolean",
+          "description": "True if task is completed, false otherwise"
+        }
+      },
+      {
+        "name": "registerCalendarObserver",
+        "type": "function",
+        "description": "Registers an observer for calendar changes",
+        "async": true,
+        "parameters": [],
+        "returns": {
+          "type": "boolean",
+          "description": "True if successful"
+        }
+      },
+      {
+        "name": "getCompletedTasks",
+        "type": "function",
+        "description": "Gets and clears completed task IDs from storage",
+        "async": true,
+        "parameters": [],
+        "returns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Array of completed task IDs"
+        }
+      }
+    ]
+  }
+]

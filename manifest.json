@@ -1,0 +1,41 @@
+{
+  "manifest_version": 2,
+  "name": "Star to Task",
+  "version": "1.5.5",
+  "description": "Automatically creates tasks from starred emails, like Outlook's follow-up flags",
+  "author": "Your Name",
+  "applications": {
+    "gecko": {
+      "id": "star-to-task@yourdomain.com",
+      "strict_min_version": "115.0"
+    }
+  },
+  "permissions": [
+    "messagesRead",
+    "messagesUpdate",
+    "accountsRead",
+    "storage",
+    "notifications"
+  ],
+  "experiment_apis": {
+    "StarToTaskAPI": {
+      "schema": "experiment-schema.json",
+      "parent": {
+        "scopes": ["addon_parent"],
+        "paths": [["StarToTaskAPI"]],
+        "script": "experiment.js"
+      }
+    }
+  },
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "icons": {
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png"
+  }
+}

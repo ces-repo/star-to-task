@@ -1,0 +1,22 @@
+<svg width="96" height="96" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFA500;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Background circle -->
+  <circle cx="48" cy="48" r="44" fill="#4A90E2"/>
+  <!-- Star -->
+  <path d="M 48 20 L 54 38 L 73 38 L 58 49 L 64 67 L 48 56 L 32 67 L 38 49 L 23 38 L 42 38 Z" 
+        fill="url(#grad)" 
+        stroke="#FFF" 
+        stroke-width="2"/>
+  <!-- Check mark -->
+  <path d="M 35 48 L 43 56 L 61 38" 
+        stroke="#FFF" 
+        stroke-width="4" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" 
+        fill="none"/>
+</svg>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Star to Task - Einstellungen</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+      background: #f5f5f5;
+    }
+    
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      color: #333;
+      margin-top: 0;
+      font-size: 24px;
+      border-bottom: 2px solid #4A90E2;
+      padding-bottom: 10px;
+    }
+    
+    .setting-group {
+      margin-bottom: 25px;
+    }
+    
+    label {
+      display: block;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    
+    .description {
+      font-size: 12px;
+      color: #777;
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+    
+    select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      background: white;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    
+    select:hover {
+      border-color: #4A90E2;
+    }
+    
+    select:focus {
+      outline: none;
+      border-color: #4A90E2;
+      box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+    }
+    
+    .save-button {
+      background: #4A90E2;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 20px;
+    }
+    
+    .save-button:hover {
+      background: #357ABD;
+    }
+    
+    .save-button:active {
+      background: #2868A8;
+    }
+    
+    .status {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 13px;
+      display: none;
+    }
+    
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      display: block;
+    }
+    
+    .info-box {
+      background: #e3f2fd;
+      border-left: 4px solid #2196F3;
+      padding: 12px 15px;
+      margin-top: 20px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #555;
+    }
+    
+    .info-box strong {
+      color: #1976D2;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⭐ Star to Task - Einstellungen</h1>
+    
+    <div class="setting-group">
+      <label for="dueDateDays">Fälligkeitsdatum für neue Aufgaben</label>
+      <div class="description">
+        Wähle, wann gesternten E-Mails automatisch fällig werden sollen.
+      </div>
+      <select id="dueDateDays">
+        <option value="0">Heute (sofort fällig)</option>
+        <option value="1">Morgen</option>
+        <option value="2">In 2 Tagen</option>
+        <option value="3">In 3 Tagen</option>
+        <option value="7">In 1 Woche</option>
+        <option value="-1">Keine Fälligkeit</option>
+      </select>
+    </div>
+    
+    <div class="setting-group">
+      <label for="priority">Aufgaben-Priorität</label>
+      <div class="description">
+        Standardpriorität für neue Aufgaben.
+      </div>
+      <select id="priority">
+        <option value="1">Hoch</option>
+        <option value="5">Mittel</option>
+        <option value="9">Niedrig</option>
+      </select>
+    </div>
+    
+    <button class="save-button" id="save">Einstellungen speichern</button>
+    
+    <div class="status" id="status"></div>
+    
+    <div class="info-box">
+      <strong>💡 Tipp:</strong> Stern setzen (S) erstellt die Aufgabe mit deinen Einstellungen. 
+      Stern entfernen markiert die Aufgabe als erledigt (wie in Outlook).
+    </div>
+  </div>
+  
+  <script src="options.js"></script>
+</body>
+</html>
