@@ -23,9 +23,33 @@ Für manifest.json hinzufügen:
 */
 
 var { ExtensionCommon } = ChromeUtils.importESModule("resource://gre/modules/ExtensionCommon.sys.mjs");
+var { cal } = ChromeUtils.importESModule("resource:///modules/calendar/calUtils.sys.mjs");
+
+// Registrierter Kalender-Observer (wird beim Deaktivieren/Update wieder entfernt,
+// sonst bleibt der alte Observer bis zum Thunderbird-Neustart aktiv)
+let registeredObserver = null;
+
+function removeCalendarObserver() {
+  if (!registeredObserver) return;
+  for (const calendar of cal.manager.getCalendars()) {
+    try {
+      calendar.removeObserver(registeredObserver);
+    } catch (e) {
+      // Kalender bereits entfernt
+    }
+  }
+  registeredObserver = null;
+}
 
 // Experiment API Implementation
 var StarToTaskAPI = class extends ExtensionCommon.ExtensionAPI {
+  onShutdown(isAppShutdown) {
+    if (isAppShutdown) return;
+    removeCalendarObserver();
+    // Damit nach einem Update die neue experiment.js geladen wird
+    Services.obs.notifyObservers(null, "startupcache-invalidate");
+  }
+
   getAPI(context) {
     return {
       StarToTaskAPI: {
@@ -38,27 +62,28 @@ var StarToTaskAPI = class extends ExtensionCommon.ExtensionAPI {
             console.log('  Priority:', priority || 5);
             
             // Zugriff auf Calendar Manager
-            const calManager = Cc["@mozilla.org/calendar/manager;1"]
-              .getService(Ci.calICalendarManager);
+            const calManager = cal.manager;
             
             // Importiere cal Utils
-            const { cal } = ChromeUtils.importESModule("resource:///modules/calendar/calUtils.sys.mjs");
             
             // Hole alle Kalender
             const calendars = calManager.getCalendars();
             
-            // Finde einen beschreibbaren Kalender
+            // Finde einen beschreibbaren Kalender, der Tasks (VTODO) unterstützt
             let targetCalendar = null;
             for (let calendar of calendars) {
-              if (!calendar.readOnly) {
-                targetCalendar = calendar;
-                console.log(`Using calendar: ${calendar.name}`);
-                break;
+              if (calendar.readOnly) continue;
+              if (calendar.getProperty("capabilities.tasks.supported") === false) {
+                console.log(`  Skipping ${calendar.name}: does not support tasks`);
+                continue;
               }
+              targetCalendar = calendar;
+              console.log(`Using calendar: ${calendar.name}`);
+              break;
             }
-            
+
             if (!targetCalendar) {
-              throw new Error("No writable calendar found.");
+              throw new Error("No writable calendar with task support found.");
             }
             
             // Erstelle Todo-Item
@@ -85,32 +110,11 @@ var StarToTaskAPI = class extends ExtensionCommon.ExtensionAPI {
             
             console.log('Adding todo to calendar...');
             
-            // Verwende adoptItem statt addItem - gibt sofort ID zurück
-            try {
-              targetCalendar.adoptItem(todo);
-              const taskId = todo.id;
-              console.log('✅ Task created with ID:', taskId);
-              return taskId;
-            } catch (e) {
-              console.error('❌ adoptItem failed:', e);
-              // Fallback zu addItem mit Promise
-              return new Promise((resolve, reject) => {
-                const listener = {
-                  onOperationComplete(aCalendar, aStatus, aOperationType, aId, aDetail) {
-                    console.log('onOperationComplete called', { aStatus, aId });
-                    if (Components.isSuccessCode(aStatus)) {
-                      console.log('✅ Task created with ID:', aId);
-                      resolve(aId);
-                    } else {
-                      console.error('❌ Failed to create task. Status:', aStatus);
-                      reject(new Error(`Failed to create task. Status: ${aStatus}`));
-                    }
-                  }
-                };
-                
-                targetCalendar.addItem(todo, listener);
-              });
-            }
+            // adoptItem ist in TB 128+ asynchron und gibt das gespeicherte Item zurück
+            const addedItem = await targetCalendar.adoptItem(todo);
+            const taskId = (addedItem && addedItem.id) || todo.id;
+            console.log('✅ Task created with ID:', taskId);
+            return taskId;
             
           } catch (error) {
             console.error("❌ Error in createTask:", error);
@@ -119,56 +123,45 @@ var StarToTaskAPI = class extends ExtensionCommon.ExtensionAPI {
         },
         
         /**
-         * "Löscht" eine Aufgabe (markiert als erledigt, wie Outlook)
+         * Löscht eine Aufgabe wirklich aus dem Kalender.
+         * Sucht den Task in schreibbaren, task-fähigen Kalendern und ruft deleteItem auf.
          */
         async deleteTask(taskId) {
           try {
-            console.log('Completing task (instead of deleting):', taskId);
-            
-            const calManager = Cc["@mozilla.org/calendar/manager;1"]
-              .getService(Ci.calICalendarManager);
-            
-            const { cal } = ChromeUtils.importESModule("resource:///modules/calendar/calUtils.sys.mjs");
-            const calendars = calManager.getCalendars();
-            
-            // NEUE STRATEGIE: Da wir das Item nicht finden können,
-            // erstellen wir ein NEUES Item mit der gleichen ID und markieren es als COMPLETED
-            // Dann ersetzt Thunderbird das alte Item automatisch
-            
+            console.log('Deleting task:', taskId);
+
+            const calendars = cal.manager.getCalendars();
+
             for (let calendar of calendars) {
               if (calendar.readOnly) continue;
-              
-              console.log(`  Trying to complete in calendar: ${calendar.name}`);
-              
+              if (calendar.getProperty("capabilities.tasks.supported") === false) continue;
+
+              let item = null;
               try {
-                // Erstelle ein "Dummy" Todo mit der ID
-                const todo = Cc["@mozilla.org/calendar/todo;1"]
-                  .createInstance(Ci.calITodo);
-                
-                todo.id = taskId;
-                todo.title = "Completed Task";
-                todo.isCompleted = true;
-                todo.completedDate = cal.dtz.now();
-                todo.percentComplete = 100;
-                
-                // Versuche es zu "modifizieren" (Thunderbird sollte es erkennen)
-                calendar.modifyItem(todo, null);
-                
-                console.log('✅ Task marked as completed:', taskId);
+                item = await calendar.getItem(taskId);
+              } catch (e) {
+                console.log(`  getItem failed in ${calendar.name}:`, e.message);
+                continue;
+              }
+
+              if (!item) continue;
+
+              console.log(`  Found task in calendar: ${calendar.name}`);
+              try {
+                await calendar.deleteItem(item);
+                console.log('✅ Task deleted:', taskId);
                 return true;
               } catch (e) {
-                console.log(`    Failed in ${calendar.name}:`, e.message);
+                console.error(`  deleteItem failed in ${calendar.name}:`, e.message);
+                return false;
               }
             }
-            
-            // Wenn das auch nicht funktioniert, geben wir einfach "true" zurück
-            // Die Aufgabe bleibt im Kalender, aber die Zuordnung wird entfernt
-            console.warn('⚠️ Could not complete task, but removing mapping anyway');
-            return true; // Gib true zurück, damit die Zuordnung gelöscht wird
-            
+
+            console.warn('⚠️ Task not found in any writable task calendar:', taskId);
+            return true; // Zuordnung im Storage darf trotzdem weg
           } catch (error) {
-            console.error("❌ Error completing task:", error);
-            return true; // Auch bei Fehler: Zuordnung löschen
+            console.error("❌ Error deleting task:", error);
+            return true;
           }
         },
         
@@ -179,8 +172,7 @@ var StarToTaskAPI = class extends ExtensionCommon.ExtensionAPI {
           try {
             console.log('Registering calendar observer...');
             
-            const calManager = Cc["@mozilla.org/calendar/manager;1"]
-              .getService(Ci.calICalendarManager);
+            const calManager = cal.manager;
             
             const calendars = calManager.getCalendars();
             
@@ -194,10 +186,9 @@ var StarToTaskAPI = class extends ExtensionCommon.ExtensionAPI {
               async onModifyItem(aNewItem, aOldItem) {
                 // Todo wurde geändert
                 if (aNewItem.isTodo) {
-                  console.log('Todo modified:', aNewItem.id);
-                  
-                  // Prüfe ob erledigt
-                  if (aNewItem.isCompleted || aNewItem.percentComplete === 100) {
+                  // Nur Wechsel auf "erledigt" melden (nicht jede Sync-Änderung)
+                  const wasCompleted = aOldItem && (aOldItem.isCompleted || aOldItem.percentComplete === 100);
+                  if (!wasCompleted && (aNewItem.isCompleted || aNewItem.percentComplete === 100)) {
                     console.log('  → Todo is completed! Task ID:', aNewItem.id);
                     
                     // Schreibe in temporären Storage für background.js
@@ -239,10 +230,14 @@ var StarToTaskAPI = class extends ExtensionCommon.ExtensionAPI {
               onEndBatch() {},
               onLoad() {},
               onAddItem(aItem) {},
-              onError(aCalendar, aErrNo, aMessage) {}
+              onError(aCalendar, aErrNo, aMessage) {},
+              onPropertyChanged(aCalendar, aName, aValue, aOldValue) {},
+              onPropertyDeleting(aCalendar, aName) {}
             };
             
             // Registriere Observer bei allen Kalendern
+            removeCalendarObserver();
+            registeredObserver = observer;
             for (let calendar of calendars) {
               calendar.addObserver(observer);
               console.log(`  Observer registered for: ${calendar.name}`);
@@ -292,10 +287,8 @@ var StarToTaskAPI = class extends ExtensionCommon.ExtensionAPI {
           try {
             console.log('Checking if task is completed:', taskId);
             
-            const calManager = Cc["@mozilla.org/calendar/manager;1"]
-              .getService(Ci.calICalendarManager);
+            const calManager = cal.manager;
             
-            const { cal } = ChromeUtils.importESModule("resource:///modules/calendar/calUtils.sys.mjs");
             const calendars = calManager.getCalendars();
             
             console.log(`  Searching in ${calendars.length} calendar(s)...`);
@@ -348,57 +341,40 @@ var StarToTaskAPI = class extends ExtensionCommon.ExtensionAPI {
         async completeTask(taskId) {
           try {
             // Zugriff auf Calendar Manager - die RICHTIGE Methode
-            const calManager = Cc["@mozilla.org/calendar/manager;1"]
-              .getService(Ci.calICalendarManager);
+            const calManager = cal.manager;
             
             const calendars = calManager.getCalendars();
             
-            // Suche die Aufgabe in allen Kalendern
+            // Suche die Aufgabe in allen schreibbaren, task-fähigen Kalendern
             for (let calendar of calendars) {
+              if (calendar.readOnly) continue;
+              if (calendar.getProperty("capabilities.tasks.supported") === false) continue;
+
+              let item = null;
               try {
-                const item = await new Promise((resolve, reject) => {
-                  calendar.getItem(taskId, {
-                    onGetResult(aCalendar, aStatus, aItemType, aDetail, aItems) {
-                      if (Components.isSuccessCode(aStatus) && aItems.length > 0) {
-                        resolve(aItems[0]);
-                      } else {
-                        resolve(null);
-                      }
-                    }
-                  });
-                });
-                
-                if (item && item.isTodo) {
-                  // Importiere cal Utils
-                  const { cal } = ChromeUtils.importESModule("resource:///modules/calendar/calUtils.sys.mjs");
-                  
-                  // Klone das Item und markiere als erledigt
-                  const clone = item.clone();
-                  clone.completedDate = cal.dtz.now();
-                  clone.percentComplete = 100;
-                  clone.isCompleted = true;
-                  
-                  return new Promise((resolve, reject) => {
-                    const listener = {
-                      onOperationComplete(aCalendar, aStatus, aOperationType, aId, aDetail) {
-                        if (Components.isSuccessCode(aStatus)) {
-                          console.log('Task completed successfully:', taskId);
-                          resolve(true);
-                        } else {
-                          reject(new Error(`Failed to complete task. Status: ${aStatus}`));
-                        }
-                      }
-                    };
-                    
-                    calendar.modifyItem(clone, item, listener);
-                  });
-                }
+                item = await calendar.getItem(taskId);
               } catch (e) {
-                // Aufgabe nicht in diesem Kalender
-                console.log('Task not in calendar:', calendar.name);
+                console.log(`  getItem failed in ${calendar.name}:`, e.message);
+                continue;
+              }
+
+              if (!item || !item.isTodo) continue;
+
+              const clone = item.clone();
+              clone.completedDate = cal.dtz.now();
+              clone.percentComplete = 100;
+              clone.isCompleted = true;
+
+              try {
+                await calendar.modifyItem(clone, item);
+                console.log('Task completed successfully:', taskId);
+                return true;
+              } catch (e) {
+                console.error(`  modifyItem failed in ${calendar.name}:`, e.message);
+                return false;
               }
             }
-            
+
             console.warn('Task not found in any calendar:', taskId);
             return false;
             

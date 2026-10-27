@@ -3,7 +3,7 @@
 **Thunderbird Add-on: Convert starred emails to tasks automatically - like Outlook's Follow-Up Flags!**
 
 [![Thunderbird](https://img.shields.io/badge/Thunderbird-115%2B-0a84ff?style=flat&logo=thunderbird)](https://www.thunderbird.net/)
-[![Version](https://img.shields.io/badge/version-1.5.5-blue)](https://github.com/ces-repo/star-to-task/releases)
+[![Version](https://img.shields.io/badge/version-1.6.5-blue)](https://github.com/ces-repo/star-to-task/releases)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 Perfect for users migrating from Outlook to Thunderbird who miss the follow-up flag functionality!
@@ -160,6 +160,18 @@ cd star-to-task
 4. Check console for errors
 
 ## 📝 Version History
+
+### v1.6.5 (2026-10-27)
+- 🔗 Tasks stay linked to their email after it is moved to another folder or after a Thunderbird restart (linked via the Message-ID header instead of the internal message id). Previously such tasks could be deleted by mistake.
+- 🛡️ A task is only removed when the email is found and no longer starred
+- ♻️ No duplicate task when an email is starred again
+- ✅ Completing a task also removes the star from moved emails
+- 🧹 Calendar observer is unregistered cleanly on update/disable; much less console logging
+- Thunderbird 158 compatibility (strict_max_version)
+
+### v1.5.6 – v1.6.1
+- Reconciliation of tasks whose star was removed on another computer (IMAP)
+- Fixes for Thunderbird 128+ calendar API
 
 ### v1.5.5 (2026-01-27) - Production Release
 - ✅ Full bidirectional synchronization
