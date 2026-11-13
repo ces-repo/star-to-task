@@ -3,7 +3,7 @@
 **Thunderbird Add-on: Convert starred emails to tasks automatically - like Outlook's Follow-Up Flags!**
 
 [![Thunderbird](https://img.shields.io/badge/Thunderbird-115%2B-0a84ff?style=flat&logo=thunderbird)](https://www.thunderbird.net/)
-[![Version](https://img.shields.io/badge/version-1.6.6-blue)](https://github.com/ces-repo/star-to-task/releases)
+[![Version](https://img.shields.io/badge/version-1.6.7-blue)](https://github.com/ces-repo/star-to-task/releases)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 Perfect for users migrating from Outlook to Thunderbird who miss the follow-up flag functionality!
@@ -160,6 +160,9 @@ cd star-to-task
 4. Check console for errors
 
 ## 📝 Version History
+
+### v1.6.7 (2026-11-13)
+- Compatible with Thunderbird 160
 
 ### v1.6.6 (2026-10-29)
 - Compatible with Thunderbird 159
